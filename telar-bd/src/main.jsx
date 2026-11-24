@@ -4,9 +4,12 @@ import './styles/reset.css';   // 1. Limpia estilos por defecto del navegador
 import './styles/tokens.css';  // 2. Define las variables (:root)
 import './styles/global.css';  // 3. Aplica estilos globales usando esas variables
 import App from './App.jsx'
+import { ToastProvider } from './context/ToastContext.jsx';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    <ToastProvider>
+      <App />
+    </ToastProvider>
   </StrictMode>,
 )
