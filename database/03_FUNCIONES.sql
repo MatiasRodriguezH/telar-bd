@@ -8,56 +8,7 @@ ARCHIVO 03: FUNCIONES ALMACENADAS DE VALIDACION Y CALCULO
 */
 
 ---------------------------------------------------------------------------------
--- 1. FUNCION DE CONTROL DE ACCESO: VALIDAR LOGIN Y RETORNAR PERFIL (CARGO)
----------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION BCMRACUF_F_VALIDAR_LOGIN(
-    USUARIO_P IN VARCHAR2,
-    CONTRASENA_P IN VARCHAR2
-) RETURN VARCHAR2
-IS
-    CARGO_V VARCHAR2(50);
-BEGIN
-    SELECT CARGO
-    INTO CARGO_V
-    FROM BCMRACUF_EMPLEADO
-    WHERE UPPER(USUARIO) = UPPER(TRIM(USUARIO_P))
-      AND CONTRASENA = CONTRASENA_P;
-
-    RETURN CARGO_V;
-EXCEPTION
-    WHEN NO_DATA_FOUND THEN
-        RETURN 'INVALIDO';
-    WHEN OTHERS THEN
-        RETURN 'ERROR';
-END;
-/
-
----------------------------------------------------------------------------------
--- 2. FUNCION DE FORMATO DE TURNO: CONVERTIR MINUTOS DEL DIA A FORMATO HH24:MI
----------------------------------------------------------------------------------
-CREATE OR REPLACE FUNCTION BCMRACUF_F_MINUTOS_A_HORA(
-    MINUTOS_P IN NUMBER
-) RETURN VARCHAR2
-IS
-    HORAS_V VARCHAR2(2);
-    MINS_V VARCHAR2(2);
-BEGIN
-    IF MINUTOS_P IS NULL OR MINUTOS_P < 0 THEN
-        RETURN '00:00';
-    END IF;
-
-    HORAS_V := LPAD(TRUNC(MINUTOS_P / 60), 2, '0');
-    MINS_V := LPAD(MOD(MINUTOS_P, 60), 2, '0');
-
-    RETURN HORAS_V || ':' || MINS_V;
-EXCEPTION
-    WHEN OTHERS THEN
-        RETURN '00:00';
-END;
-/
-
----------------------------------------------------------------------------------
--- 3. FUNCION DE DISPONIBILIDAD DE MESA (EVITA CRUCE DE HORARIOS EN RESERVAS)
+-- 1. FUNCION DE DISPONIBILIDAD DE MESA (EVITA CRUCE DE HORARIOS EN RESERVAS)
 -- RETORNA 1 SI LA MESA ESTA LIBRE EN ESE RANGO, 0 SI YA TIENE RESERVA
 ---------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION BCMRACUF_F_VALIDAR_MESA(
@@ -87,7 +38,7 @@ END;
 /
 
 ---------------------------------------------------------------------------------
--- 4. FUNCION PARA OBTENER EL PRECIO VIGENTE DE UN PLATO DE LA CARTA
+-- 2. FUNCION PARA OBTENER EL PRECIO VIGENTE DE UN PLATO DE LA CARTA
 ---------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION BCMRACUF_F_PRECIO_PLATO(
     ID_PLATO_P IN NUMBER
@@ -110,7 +61,7 @@ END;
 /
 
 ---------------------------------------------------------------------------------
--- 5. FUNCION PARA CONSULTAR EL STOCK ACTUAL DE UN INGREDIENTE
+-- 3. FUNCION PARA CONSULTAR EL STOCK ACTUAL DE UN INGREDIENTE
 ---------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION BCMRACUF_F_STOCK_INGREDIENTE(
     ID_INGREDIENTE_P IN NUMBER
@@ -133,7 +84,7 @@ END;
 /
 
 ---------------------------------------------------------------------------------
--- 6. FUNCION PARA CALCULAR EL TOTAL DE UN PEDIDO (PLATOS + PROPINA)
+-- 4. FUNCION PARA CALCULAR EL TOTAL DE UN PEDIDO (PLATOS + PROPINA)
 ---------------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION BCMRACUF_F_TOTAL_PEDIDO(
     ID_PEDIDO_P IN NUMBER

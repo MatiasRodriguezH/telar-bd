@@ -4,7 +4,7 @@ import { useToast } from '../context/ToastContext.jsx';
 import { createCrud, deleteCrud, listCrud, updateCrud } from '../services/crud.service.js';
 import { asignarTurno, getAsignacionesTurno } from '../services/gestores.service.js';
 import { getReporteGarzones } from '../services/reportes.service.js';
-import { CARGO_CONFIG, formatCLP } from '../utils/formatters.js';
+import { CARGO_CONFIG, formatCLP, formatMinutosAHora } from '../utils/formatters.js';
 import { Badge, Button, Card, Input, Modal, Select, Table } from '../components/ui/index.jsx';
 
 const CARGOS_OPCIONES = [
@@ -196,7 +196,7 @@ export default function EmpleadosPage() {
     {
       key: 'horario',
       label: 'Horario',
-      render: (a) => `${a.HORA_INICIO} — ${a.HORA_FIN}`,
+      render: (a) => `${formatMinutosAHora(a.INICIO_MIN)} — ${formatMinutosAHora(a.FIN_MIN)}`,
     },
   ];
 
@@ -277,7 +277,7 @@ export default function EmpleadosPage() {
                   onChange={(e) => setFormTurno({ ...formTurno, id_turno: e.target.value })}
                   options={turnos.map((t) => ({
                     value: t.ID_TURNO,
-                    label: `Turno #${t.ID_TURNO}: ${t.HORA_INICIO} a ${t.HORA_FIN}`,
+                    label: `Turno #${t.ID_TURNO}: ${formatMinutosAHora(t.INICIO_MIN)} a ${formatMinutosAHora(t.FIN_MIN)}`,
                   }))}
                 />
                 <Input

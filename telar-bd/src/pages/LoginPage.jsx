@@ -22,7 +22,7 @@ export default function LoginPage() {
   const [contrasena, setContrasena] = useState('');
   const [cargando, setCargando] = useState(false);
 
-  // Envía las credenciales al backend, el cual ejecuta BCMRACUF_F_VALIDAR_LOGIN en Oracle
+  // Envía las credenciales al backend, que valida usuario y contraseña contra BCMRACUF_EMPLEADO
   async function handleSubmit(e) {
     e.preventDefault();
 

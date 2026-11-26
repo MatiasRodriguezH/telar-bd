@@ -75,10 +75,10 @@ app.get(
 );
 
 // =============================================================================
-// 2. AUTENTICACION DE EMPLEADOS (BCMRACUF_F_VALIDAR_LOGIN)
+// 2. AUTENTICACION DE EMPLEADOS (GESTIONADA EN EL BACKEND)
 // =============================================================================
 
-// Valida usuario y contraseña llamando a la función almacenada en Oracle
+// Busca al empleado por usuario en Oracle y valida la contraseña directamente en el backend
 app.post(
   '/api/auth/login',
   handleRoute(async (req, res) => {
@@ -87,28 +87,21 @@ app.post(
       return res.status(400).json({ message: 'Ingresa usuario y contraseña.' });
     }
 
-    const result = await callPlsql(
-      `BEGIN :cargo := BCMRACUF_F_VALIDAR_LOGIN(:usuario, :contrasena); END;`,
-      {
-        cargo: { dir: oracledb.BIND_OUT, type: oracledb.STRING, maxSize: 50 },
-        usuario: String(usuario).trim(),
-        contrasena: String(contrasena),
-      }
-    );
-
-    if (!result.cargo || result.cargo === 'INVALIDO' || result.cargo === 'ERROR') {
-      return res.status(401).json({ message: 'Usuario o contraseña incorrectos.' });
-    }
-
-    // Si el login fue válido, consultamos los datos básicos del empleado (sin contraseña)
     const empQuery = await executeSql(
-      `SELECT RUT_EMPLEADO, NOMBRES, APELLIDO_PATERNO, APELLIDO_MATERNO, CARGO, USUARIO
+      `SELECT RUT_EMPLEADO, NOMBRES, APELLIDO_PATERNO, APELLIDO_MATERNO, CARGO, USUARIO, CONTRASENA
        FROM BCMRACUF_EMPLEADO
        WHERE UPPER(USUARIO) = UPPER(TRIM(:usuario))`,
       { usuario: String(usuario).trim() }
     );
 
-    const user = empQuery.rows[0];
+    const empleado = empQuery.rows[0];
+
+    // Validamos existencia y contraseña en Node.js (nunca enviamos CONTRASENA de vuelta al cliente)
+    if (!empleado || empleado.CONTRASENA !== String(contrasena)) {
+      return res.status(401).json({ message: 'Usuario o contraseña incorrectos.' });
+    }
+
+    const { CONTRASENA, ...user } = empleado;
     const token = crearToken(user);
     res.json({ token, user });
   })
