@@ -12,7 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 // =============================================================================
-// UTILIDADES SIMPLES DE SESION (TOKEN FIRMADO CON HMAC-SHA256)
+// UTILIDADES SIMPLES DE SESION 
 // =============================================================================
 
 // Crea un token simple en base64 + firma para recordar qué empleado inició sesión
@@ -78,27 +78,27 @@ app.get(
 // 2. AUTENTICACION DE EMPLEADOS (GESTIONADA EN EL BACKEND)
 // =============================================================================
 
-// Busca al empleado por usuario en Oracle y valida la contraseña directamente en el backend
+// Busca al empleado por su RUT en Oracle (acepta con o sin puntos) y valida la contraseña en el backend
 app.post(
   '/api/auth/login',
   handleRoute(async (req, res) => {
-    const { usuario, contrasena } = req.body || {};
-    if (!usuario || !contrasena) {
-      return res.status(400).json({ message: 'Ingresa usuario y contraseña.' });
+    const { rut_empleado, contrasena } = req.body || {};
+    if (!rut_empleado || !contrasena) {
+      return res.status(400).json({ message: 'Ingresa tu RUT y contraseña.' });
     }
 
     const empQuery = await executeSql(
-      `SELECT RUT_EMPLEADO, NOMBRES, APELLIDO_PATERNO, APELLIDO_MATERNO, CARGO, USUARIO, CONTRASENA
+      `SELECT RUT_EMPLEADO, NOMBRES, APELLIDO_PATERNO, APELLIDO_MATERNO, CARGO, CONTRASENA
        FROM BCMRACUF_EMPLEADO
-       WHERE UPPER(USUARIO) = UPPER(TRIM(:usuario))`,
-      { usuario: String(usuario).trim() }
+       WHERE REPLACE(UPPER(TRIM(RUT_EMPLEADO)), '.', '') = REPLACE(UPPER(TRIM(:rut)), '.', '')`,
+      { rut: String(rut_empleado).trim() }
     );
 
     const empleado = empQuery.rows[0];
 
     // Validamos existencia y contraseña en Node.js (nunca enviamos CONTRASENA de vuelta al cliente)
     if (!empleado || empleado.CONTRASENA !== String(contrasena)) {
-      return res.status(401).json({ message: 'Usuario o contraseña incorrectos.' });
+      return res.status(401).json({ message: 'RUT o contraseña incorrectos.' });
     }
 
     const { CONTRASENA, ...user } = empleado;
@@ -201,7 +201,7 @@ app.post(
   handleRoute(async (req, res) => {
     const b = req.body;
     await callPlsql(
-      `BEGIN BCMRACUF_CRUD_EMPLEADO('I', :rut, :nombres, :pat, :mat, :cargo, :sueldo, :tel, :usuario, :contrasena); END;`,
+      `BEGIN BCMRACUF_CRUD_EMPLEADO('I', :rut, :nombres, :pat, :mat, :cargo, :sueldo, :tel, :contrasena); END;`,
       {
         rut: b.rut_empleado,
         nombres: b.nombres,
@@ -210,7 +210,6 @@ app.post(
         cargo: b.cargo,
         sueldo: Number(b.sueldo),
         tel: b.telefono || null,
-        usuario: b.usuario,
         contrasena: b.contrasena,
       }
     );
@@ -224,7 +223,7 @@ app.put(
   handleRoute(async (req, res) => {
     const b = req.body;
     await callPlsql(
-      `BEGIN BCMRACUF_CRUD_EMPLEADO('U', :rut, :nombres, :pat, :mat, :cargo, :sueldo, :tel, :usuario, :contrasena); END;`,
+      `BEGIN BCMRACUF_CRUD_EMPLEADO('U', :rut, :nombres, :pat, :mat, :cargo, :sueldo, :tel, :contrasena); END;`,
       {
         rut: req.params.rut,
         nombres: b.nombres || null,
@@ -233,7 +232,6 @@ app.put(
         cargo: b.cargo || null,
         sueldo: b.sueldo !== '' && b.sueldo != null ? Number(b.sueldo) : null,
         tel: b.telefono || null,
-        usuario: b.usuario || null,
         contrasena: b.contrasena || null,
       }
     );

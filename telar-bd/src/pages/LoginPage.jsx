@@ -4,12 +4,12 @@ import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { Button, Card, Input } from '../components/ui/index.jsx';
 
-// Cuentas de ejemplo cargadas en 08_PRUEBAS.sql para probar rápido
+// Cuentas de ejemplo cargadas en 08_PRUEBAS.sql (el inicio de sesión es con RUT)
 const CUENTAS_DEMO = [
-  { usuario: 'BCONCHA', pass: 'Admin1234', cargo: 'ADMINISTRADOR' },
-  { usuario: 'MRODRIGUEZ', pass: 'Garzon1234', cargo: 'GARZON' },
-  { usuario: 'ACARIS', pass: 'Bodega1234', cargo: 'BODEGUERO' },
-  { usuario: 'RMUNOZ', pass: 'Cocina1234', cargo: 'COCINERO' },
+  { rut: '20.451.892-4', nombre: 'Bárbara Concha', pass: 'Admin1234', cargo: 'ADMINISTRADOR' },
+  { rut: '20.612.345-8', nombre: 'Matías Rodríguez', pass: 'Garzon1234', cargo: 'GARZON' },
+  { rut: '20.789.123-1', nombre: 'Alejandro Caris', pass: 'Bodega1234', cargo: 'BODEGUERO' },
+  { rut: '16.543.210-5', nombre: 'Rosa Muñoz', pass: 'Cocina1234', cargo: 'COCINERO' },
 ];
 
 // Página de inicio de sesión exclusiva para empleados registrados en BCMRACUF_EMPLEADO
@@ -18,22 +18,22 @@ export default function LoginPage() {
   const { notify } = useToast();
   const navigate = useNavigate();
 
-  const [usuario, setUsuario] = useState('');
+  const [rut, setRut] = useState('');
   const [contrasena, setContrasena] = useState('');
   const [cargando, setCargando] = useState(false);
 
-  // Envía las credenciales al backend, que valida usuario y contraseña contra BCMRACUF_EMPLEADO
+  // Envía las credenciales al backend, que valida RUT y contraseña contra BCMRACUF_EMPLEADO
   async function handleSubmit(e) {
     e.preventDefault();
 
-    if (!usuario.trim() || !contrasena.trim()) {
-      notify('warning', 'Ingresa tu usuario y contraseña.');
+    if (!rut.trim() || !contrasena.trim()) {
+      notify('warning', 'Ingresa tu RUT y contraseña.');
       return;
     }
 
     setCargando(true);
     try {
-      const empleado = await iniciarSesion(usuario, contrasena);
+      const empleado = await iniciarSesion(rut, contrasena);
       notify('success', `Bienvenido, ${empleado.NOMBRES}`);
       navigate('/reservas');
     } catch (err) {
@@ -45,7 +45,7 @@ export default function LoginPage() {
 
   // Rellena los campos del formulario al hacer clic en una cuenta de prueba
   function usarCuentaDemo(cuenta) {
-    setUsuario(cuenta.usuario);
+    setRut(cuenta.rut);
     setContrasena(cuenta.pass);
   }
 
@@ -72,10 +72,10 @@ export default function LoginPage() {
 
           <form onSubmit={handleSubmit} style={{ display: 'grid', gap: 'var(--space-4)' }}>
             <Input
-              label="Usuario"
-              placeholder="Ej: BCONCHA"
-              value={usuario}
-              onChange={(e) => setUsuario(e.target.value)}
+              label="RUT de empleado"
+              placeholder="Ej: 20.451.892-4"
+              value={rut}
+              onChange={(e) => setRut(e.target.value)}
             />
             <Input
               label="Contraseña"
@@ -90,7 +90,7 @@ export default function LoginPage() {
           </form>
         </Card>
 
-        {/* Tarjeta de ayuda con los usuarios creados en 08_PRUEBAS.sql */}
+        {/* Tarjeta de ayuda con los empleados creados en 08_PRUEBAS.sql */}
         <Card padding="md">
           <p style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)', marginBottom: 'var(--space-2)' }}>
             Cuentas de prueba (haz clic para autocompletar):
@@ -98,7 +98,7 @@ export default function LoginPage() {
           <div style={{ display: 'grid', gap: 'var(--space-1)' }}>
             {CUENTAS_DEMO.map((c) => (
               <button
-                key={c.usuario}
+                key={c.rut}
                 type="button"
                 onClick={() => usarCuentaDemo(c)}
                 style={{
@@ -110,7 +110,7 @@ export default function LoginPage() {
                   fontSize: 'var(--text-xs)',
                 }}
               >
-                <strong>{c.usuario}</strong> / {c.pass} ({c.cargo})
+                <strong>{c.rut}</strong> — {c.nombre} ({c.cargo}) · clave: {c.pass}
               </button>
             ))}
           </div>

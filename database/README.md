@@ -15,12 +15,12 @@ Ejecuta los scripts exactamente en este orden (desde SQL Developer, SQL*Plus o e
 7. `07_REPORTES.sql` — Crea los 3 reportes gerenciales (`VENTAS_PLATO`, `GARZONES`, `INVENTARIO`).
 8. `08_PRUEBAS.sql` — Carga los datos iniciales de prueba (clientes, mesas, empleados, platos, ingredientes, recetas, suministros, turnos, reservas y pedidos).
 
-## Credenciales de prueba cargadas en `08_PRUEBAS.sql`
+## Credenciales de prueba cargadas en `08_PRUEBAS.sql` (acceso por RUT)
 
-| Usuario | Contraseña | Cargo |
-|---|---|---|
-| `BCONCHA` | `Admin1234` | `ADMINISTRADOR` |
-| `MRODRIGUEZ` | `Garzon1234` | `GARZON` |
-| `UFIGUEROA` | `Garzon1234` | `GARZON` |
-| `ACARIS` | `Bodega1234` | `BODEGUERO` |
-| `RMUNOZ` | `Cocina1234` | `COCINERO` |
+| RUT | Empleado | Contraseña | Cargo |
+|---|---|---|---|
+| `20.451.892-4` | Bárbara Concha | `Admin1234` | `ADMINISTRADOR` |
+| `20.612.345-8` | Matías Rodríguez | `Garzon1234` | `GARZON` |
+| `20.834.567-9` | Ulises Figueroa | `Garzon1234` | `GARZON` |
+| `20.789.123-1` | Alejandro Caris | `Bodega1234` | `BODEGUERO` |
+| `16.543.210-5` | Rosa Muñoz | `Cocina1234` | `COCINERO` |

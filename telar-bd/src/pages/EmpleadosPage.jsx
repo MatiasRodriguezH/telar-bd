@@ -22,7 +22,6 @@ const FORM_INICIAL = {
   cargo: 'GARZON',
   sueldo: '',
   telefono: '',
-  usuario: '',
   contrasena: '',
 };
 
@@ -92,7 +91,6 @@ export default function EmpleadosPage() {
       cargo: emp.CARGO,
       sueldo: String(emp.SUELDO),
       telefono: emp.TELEFONO || '',
-      usuario: emp.USUARIO,
       contrasena: '',
     });
     setModalAbierto(true);
@@ -167,7 +165,6 @@ export default function EmpleadosPage() {
       render: (e) => formatCLP(e.SUELDO),
     },
     { key: 'TELEFONO', label: 'Teléfono' },
-    { key: 'USUARIO', label: 'Usuario' },
     {
       key: 'acciones',
       label: 'Acciones',
@@ -354,12 +351,6 @@ export default function EmpleadosPage() {
               label="Teléfono"
               value={formEmp.telefono}
               onChange={(e) => setFormEmp({ ...formEmp, telefono: e.target.value })}
-            />
-            <Input
-              label="Usuario de acceso"
-              required
-              value={formEmp.usuario}
-              onChange={(e) => setFormEmp({ ...formEmp, usuario: e.target.value })}
             />
             <Input
               label={editRut ? 'Nueva contraseña (opcional)' : 'Contraseña'}

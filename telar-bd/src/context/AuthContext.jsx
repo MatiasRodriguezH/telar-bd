@@ -33,9 +33,9 @@ export function AuthProvider({ children }) {
     verificarSesion();
   }, []);
 
-  // Llama al backend para validar usuario/contraseña y guarda el empleado en el estado
-  async function iniciarSesion(usuario, contrasena) {
-    const empleado = await loginService(usuario, contrasena);
+  // Llama al backend para validar RUT/contraseña y guarda el empleado en el estado
+  async function iniciarSesion(rut, contrasena) {
+    const empleado = await loginService(rut, contrasena);
     setUser(empleado);
     return empleado;
   }

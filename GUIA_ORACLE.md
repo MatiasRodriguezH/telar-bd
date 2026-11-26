@@ -51,10 +51,10 @@ cd ~/Desktop/trabajo/telar-bd
 npm run dev
 ```
 
-Abre `http://localhost:5173` e inicia sesión con cualquiera de las cuentas cargadas por `08_PRUEBAS.sql`:
-- **Administrador:** `BCONCHA` / `Admin1234`
-- **Garzón:** `MRODRIGUEZ` / `Garzon1234`
-- **Bodeguero:** `ACARIS` / `Bodega1234`
-- **Cocinero:** `RMUNOZ` / `Cocina1234`
+Abre `http://localhost:5173` e inicia sesión con el RUT de cualquiera de las cuentas cargadas por `08_PRUEBAS.sql`:
+- **Administrador:** `20.451.892-4` / `Admin1234`
+- **Garzón:** `20.612.345-8` / `Garzon1234`
+- **Bodeguero:** `20.789.123-1` / `Bodega1234`
+- **Cocinero:** `16.543.210-5` / `Cocina1234`
 
 ---

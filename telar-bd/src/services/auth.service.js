@@ -1,9 +1,10 @@
 import { apiFetch, setStoredToken } from './api.js';
 
-export async function login(usuario, contrasena) {
+// Envía RUT y contraseña al backend para iniciar sesión y guarda el token recibido
+export async function login(rut_empleado, contrasena) {
   const data = await apiFetch('/api/auth/login', {
     method: 'POST',
-    body: { usuario, contrasena },
+    body: { rut_empleado, contrasena },
   });
   if (data?.token) setStoredToken(data.token);
   return data.user;
