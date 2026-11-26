@@ -1,0 +1,162 @@
+/*
+=================================================================================
+PROYECTO FINAL DE BASE DE DATOS (INF324 - UCM) - EQUIPO 28
+INTEGRANTES: BARBARA CONCHA, MATIAS RODRIGUEZ, ALEJANDRO CARIS, ULISES FIGUEROA
+PROBLEMATICA: SISTEMA DE GESTION PARA RESTAURANTE "LAS VIEJAS COCHINAS" (TALCA)
+ARCHIVO 03: FUNCIONES ALMACENADAS DE VALIDACION Y CALCULO
+=================================================================================
+*/
+
+---------------------------------------------------------------------------------
+-- 1. FUNCION DE CONTROL DE ACCESO: VALIDAR LOGIN Y RETORNAR PERFIL (CARGO)
+---------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION BCMRACUF_F_VALIDAR_LOGIN(
+    USUARIO_P IN VARCHAR2,
+    CONTRASENA_P IN VARCHAR2
+) RETURN VARCHAR2
+IS
+    CARGO_V VARCHAR2(50);
+BEGIN
+    SELECT CARGO
+    INTO CARGO_V
+    FROM BCMRACUF_EMPLEADO
+    WHERE UPPER(USUARIO) = UPPER(TRIM(USUARIO_P))
+      AND CONTRASENA = CONTRASENA_P;
+
+    RETURN CARGO_V;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN 'INVALIDO';
+    WHEN OTHERS THEN
+        RETURN 'ERROR';
+END;
+/
+
+---------------------------------------------------------------------------------
+-- 2. FUNCION DE FORMATO DE TURNO: CONVERTIR MINUTOS DEL DIA A FORMATO HH24:MI
+---------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION BCMRACUF_F_MINUTOS_A_HORA(
+    MINUTOS_P IN NUMBER
+) RETURN VARCHAR2
+IS
+    HORAS_V VARCHAR2(2);
+    MINS_V VARCHAR2(2);
+BEGIN
+    IF MINUTOS_P IS NULL OR MINUTOS_P < 0 THEN
+        RETURN '00:00';
+    END IF;
+
+    HORAS_V := LPAD(TRUNC(MINUTOS_P / 60), 2, '0');
+    MINS_V := LPAD(MOD(MINUTOS_P, 60), 2, '0');
+
+    RETURN HORAS_V || ':' || MINS_V;
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN '00:00';
+END;
+/
+
+---------------------------------------------------------------------------------
+-- 3. FUNCION DE DISPONIBILIDAD DE MESA (EVITA CRUCE DE HORARIOS EN RESERVAS)
+-- RETORNA 1 SI LA MESA ESTA LIBRE EN ESE RANGO, 0 SI YA TIENE RESERVA
+---------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION BCMRACUF_F_VALIDAR_MESA(
+    NUM_MESA_P IN NUMBER,
+    INICIO_P IN TIMESTAMP,
+    FIN_P IN TIMESTAMP
+) RETURN NUMBER
+IS
+    CRUCES_V NUMBER := 0;
+BEGIN
+    SELECT COUNT(*)
+    INTO CRUCES_V
+    FROM BCMRACUF_RESERVA
+    WHERE NUM_MESA = NUM_MESA_P
+      AND INICIO < FIN_P
+      AND FIN > INICIO_P;
+
+    IF CRUCES_V = 0 THEN
+        RETURN 1;
+    ELSE
+        RETURN 0;
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        RETURN 0;
+END;
+/
+
+---------------------------------------------------------------------------------
+-- 4. FUNCION PARA OBTENER EL PRECIO VIGENTE DE UN PLATO DE LA CARTA
+---------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION BCMRACUF_F_PRECIO_PLATO(
+    ID_PLATO_P IN NUMBER
+) RETURN NUMBER
+IS
+    PRECIO_V NUMBER;
+BEGIN
+    SELECT PRECIO_VIGENTE
+    INTO PRECIO_V
+    FROM BCMRACUF_PLATO
+    WHERE ID_PLATO = ID_PLATO_P;
+
+    RETURN PRECIO_V;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN -1;
+    WHEN OTHERS THEN
+        RETURN -1;
+END;
+/
+
+---------------------------------------------------------------------------------
+-- 5. FUNCION PARA CONSULTAR EL STOCK ACTUAL DE UN INGREDIENTE
+---------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION BCMRACUF_F_STOCK_INGREDIENTE(
+    ID_INGREDIENTE_P IN NUMBER
+) RETURN NUMBER
+IS
+    STOCK_V NUMBER;
+BEGIN
+    SELECT STOCK_ACTUAL
+    INTO STOCK_V
+    FROM BCMRACUF_INGREDIENTE
+    WHERE ID_INGREDIENTE = ID_INGREDIENTE_P;
+
+    RETURN STOCK_V;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN -1;
+    WHEN OTHERS THEN
+        RETURN -1;
+END;
+/
+
+---------------------------------------------------------------------------------
+-- 6. FUNCION PARA CALCULAR EL TOTAL DE UN PEDIDO (PLATOS + PROPINA)
+---------------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION BCMRACUF_F_TOTAL_PEDIDO(
+    ID_PEDIDO_P IN NUMBER
+) RETURN NUMBER
+IS
+    SUBTOTAL_PLATOS_V NUMBER := 0;
+    PROPINA_V NUMBER := 0;
+BEGIN
+    SELECT NVL(SUM(CANTIDAD * PRECIO_UNITARIO), 0)
+    INTO SUBTOTAL_PLATOS_V
+    FROM BCMRACUF_DETALLE_PEDIDO
+    WHERE ID_PEDIDO = ID_PEDIDO_P;
+
+    SELECT NVL(PROPINA, 0)
+    INTO PROPINA_V
+    FROM BCMRACUF_PEDIDO
+    WHERE ID_PEDIDO = ID_PEDIDO_P;
+
+    RETURN SUBTOTAL_PLATOS_V + PROPINA_V;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN 0;
+    WHEN OTHERS THEN
+        RETURN 0;
+END;
+/

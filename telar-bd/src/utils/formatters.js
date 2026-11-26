@@ -80,10 +80,16 @@ export function formatNombreCompleto(persona) {
     .filter(Boolean)
     .join(' ');
 }
-
 export const CARGO_CONFIG = {
-  ADMIN: { label: 'Administrador', variant: 'primary' },
+  ADMINISTRADOR: { label: 'Administrador', variant: 'primary' },
   GARZON: { label: 'Garzón', variant: 'info' },
-  CHEF: { label: 'Chef', variant: 'warning' },
-  RECEPCIONISTA: { label: 'Recepcionista', variant: 'success' },
+  BODEGUERO: { label: 'Bodeguero', variant: 'warning' },
+  COCINERO: { label: 'Cocinero', variant: 'success' },
+};
+
+export const ESTADO_STOCK_CONFIG = {
+  'SIN STOCK': { label: 'Sin stock', variant: 'danger' },
+  'STOCK CRITICO': { label: 'Stock crítico', variant: 'danger' },
+  'STOCK BAJO': { label: 'Stock bajo', variant: 'warning' },
+  'STOCK OPTIMO': { label: 'Stock óptimo', variant: 'success' },
 };

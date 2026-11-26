@@ -1,0 +1,23 @@
+# Archivo opcional para levantar Oracle Database 23ai Free localmente con Docker.
+# Si ya usas Oracle XE instalado en tu PC o un servidor de la universidad,
+# simplemente edita backend/.env con tus credenciales y no necesitas este archivo.
+services:
+  oracle-free:
+    image: gvenzl/oracle-free:23-slim
+    container_name: restaurante-oracle
+    ports:
+      - "1521:1521"
+    environment:
+      ORACLE_PASSWORD: OracleAdmin2026!
+      APP_USER: RESTAURANTE_APP
+      APP_USER_PASSWORD: Restaurante2026!
+    volumes:
+      - oracle_restaurante_data:/opt/oracle/oradata
+    healthcheck:
+      test: ["CMD", "healthcheck.sh"]
+      interval: 15s
+      timeout: 10s
+      retries: 20
+
+volumes:
+  oracle_restaurante_data:

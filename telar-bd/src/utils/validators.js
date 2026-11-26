@@ -1,21 +1,7 @@
+// Valida el formato de RUT chileno (ej: 18.456.789-2 o 18456789-2) dentro de VARCHAR2(12)
 export function validarRut(rut = '') {
-  const clean = String(rut).replace(/[^0-9kK]/g, '').toUpperCase();
-  if (clean.length < 8 || clean.length > 9) return false;
-
-  const body = clean.slice(0, -1);
-  const dv = clean.slice(-1);
-  if (!/^\d+$/.test(body)) return false;
-
-  let suma = 0;
-  let multiplicador = 2;
-  for (let i = body.length - 1; i >= 0; i--) {
-    suma += Number(body[i]) * multiplicador;
-    multiplicador = multiplicador === 7 ? 2 : multiplicador + 1;
-  }
-
-  const resto = 11 - (suma % 11);
-  const dvEsperado = resto === 11 ? '0' : resto === 10 ? 'K' : String(resto);
-  return dv === dvEsperado;
+  const clean = String(rut).trim();
+  return clean.length <= 12 && /^\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]$/.test(clean);
 }
 
 export function validarCorreo(correo = '') {
