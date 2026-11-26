@@ -14,10 +14,10 @@ Sistema de decisiones visuales
   --text: #1c1917;
   --text-muted: #475569;
 
-  /* Marca (cámbialos a la paleta que quieras para tu tienda) */
+  /* Marca (tonos cálidos para restaurante) */
   --primary: #7c2d12;
-  --primary-hover: #4338ca;
-  --primary-soft: #eef2ff;
+  --primary-hover: #9a3412;
+  --primary-soft: #fff7ed;
   
   /* Estados semánticos */
   --success: #059669;
