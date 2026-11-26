@@ -224,7 +224,6 @@ export default function EmpleadosPage() {
       <div className="page-header">
         <div>
           <h2>Manejo de Empleados</h2>
-          <p>Administra el personal del restaurante, sus turnos y su desempeño.</p>
         </div>
         <Button onClick={abrirCrear}>
           <Plus size={16} /> Nuevo Empleado

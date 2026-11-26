@@ -89,13 +89,7 @@ export default function ManejarReservasPage() {
   return (
     <div style={{ display: 'grid', gap: 'var(--space-6)' }}>
       <div className="page-header" style={{ marginBottom: 0 }}>
-        <div>
           <h2>Manejar Reservas</h2>
-          <p>Consulta, filtra o cancela las reservas registradas en el restaurante.</p>
-        </div>
-        <Button onClick={() => navigate('/reservas/crear')}>
-          <Plus size={16} /> Nueva Reserva
-        </Button>
       </div>
 
       {/* Buscador simple */}

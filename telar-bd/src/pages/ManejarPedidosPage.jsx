@@ -174,7 +174,6 @@ export default function ManejarPedidosPage() {
       <div className="page-header">
         <div>
           <h2>Manejar Pedidos</h2>
-          <p>Revisa las comandas activas, agrega platos o consulta el ranking de ventas.</p>
         </div>
         <Button onClick={() => navigate('/pedidos/crear')}>
           <Plus size={16} /> Nuevo Pedido

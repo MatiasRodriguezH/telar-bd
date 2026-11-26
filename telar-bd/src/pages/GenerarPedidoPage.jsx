@@ -171,7 +171,6 @@ export default function GenerarPedidoPage() {
       <div className="page-header" style={{ marginBottom: 0 }}>
         <div>
           <h2>Generar Pedido</h2>
-          <p>Abre una comanda para una mesa y agrega los platos de la carta.</p>
         </div>
       </div>
 

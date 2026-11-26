@@ -233,7 +233,6 @@ export default function InventarioPage() {
       <div className="page-header">
         <div>
           <h2>Manejo de Inventario</h2>
-          <p>Controla stock de ingredientes, ingresos de suministros a bodega y recetas.</p>
         </div>
         <Button onClick={abrirCrearIngrediente}>
           <Plus size={16} /> Nuevo Ingrediente

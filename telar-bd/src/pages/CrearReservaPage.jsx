@@ -108,7 +108,6 @@ export default function CrearReservaPage() {
       <div className="page-header">
         <div>
           <h2>Crear Reserva</h2>
-          <p>Registra una reserva de mesa y un acompañante opcional.</p>
         </div>
         <Button variant="secondary" onClick={() => setModalCliente(true)}>
           <UserPlus size={16} /> Nuevo Cliente
