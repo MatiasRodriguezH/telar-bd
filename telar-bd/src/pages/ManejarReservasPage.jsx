@@ -1,15 +1,19 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, Trash2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { puedeBorrar } from '../utils/permissions.js';
 import { listCrud } from '../services/crud.service.js';
 import { eliminarReserva, getReservas } from '../services/gestores.service.js';
 import { Badge, Button, Card, Input, Table } from '../components/ui/index.jsx';
 
 // Página para ver, buscar y cancelar reservas existentes, además de ver acompañantes
 export default function ManejarReservasPage() {
+  const { user } = useAuth();
   const { notify } = useToast();
   const navigate = useNavigate();
+  const permiteBorrar = puedeBorrar(user?.CARGO, 'reservas');
 
   const [reservas, setReservas] = useState([]);
   const [acompanantes, setAcompanantes] = useState([]);
@@ -67,16 +71,21 @@ export default function ManejarReservasPage() {
     { key: 'INICIO_FMT', label: 'Inicio' },
     { key: 'FIN_FMT', label: 'Fin' },
     { key: 'COMENSALES', label: 'Comensales', align: 'center' },
-    {
-      key: 'acciones',
-      label: 'Acción',
-      align: 'right',
-      render: (r) => (
-        <Button size="sm" variant="danger" onClick={() => handleEliminar(r.ID_RESERVA)}>
-          <Trash2 size={14} /> Cancelar
-        </Button>
-      ),
-    },
+    // Solo mostramos la columna de eliminar si el cargo tiene permiso para borrar
+    ...(permiteBorrar
+      ? [
+          {
+            key: 'acciones',
+            label: 'Acción',
+            align: 'right',
+            render: (r) => (
+              <Button size="sm" variant="danger" onClick={() => handleEliminar(r.ID_RESERVA)}>
+                <Trash2 size={14} /> Cancelar
+              </Button>
+            ),
+          },
+        ]
+      : []),
   ];
 
   const columnasAcompanantes = [
@@ -114,7 +123,7 @@ export default function ManejarReservasPage() {
         />
       )}
 
-      {/* Tabla complementaria de acompañantes */}
+      {/* Tabla de acompañantes */}
       <section>
         <h3 style={{ fontSize: 'var(--text-lg)', marginBottom: 'var(--space-3)' }}>
           Acompañantes registrados

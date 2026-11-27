@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Eye, Plus, Trash2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { puedeBorrar } from '../utils/permissions.js';
 import { listCrud } from '../services/crud.service.js';
 import {
   agregarDetallePedido,
@@ -15,8 +17,10 @@ import { Badge, Button, Card, Input, Modal, Select, Table } from '../components/
 
 // Página para ver todos los pedidos, inspeccionar/agregar platos y ver ranking de ventas
 export default function ManejarPedidosPage() {
+  const { user } = useAuth();
   const { notify } = useToast();
   const navigate = useNavigate();
+  const permiteBorrar = puedeBorrar(user?.CARGO, 'pedidos');
 
   const [tab, setTab] = useState('pedidos');
   const [pedidos, setPedidos] = useState([]);
@@ -132,9 +136,11 @@ export default function ManejarPedidosPage() {
           <Button size="sm" variant="secondary" onClick={() => handleVerDetalle(p)}>
             <Eye size={14} /> Detalle
           </Button>
-          <Button size="sm" variant="danger" onClick={() => handleEliminar(p.ID_PEDIDO)}>
-            <Trash2 size={14} />
-          </Button>
+          {permiteBorrar && (
+            <Button size="sm" variant="danger" onClick={() => handleEliminar(p.ID_PEDIDO)}>
+              <Trash2 size={14} />
+            </Button>
+          )}
         </div>
       ),
     },

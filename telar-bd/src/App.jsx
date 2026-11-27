@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { useAuth } from './context/AuthContext.jsx';
+import { getRutaInicial, puedeVerSeccion } from './utils/permissions.js';
 import Layout from './components/Layout.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import CrearReservaPage from './pages/CrearReservaPage.jsx';
@@ -8,8 +9,9 @@ import GenerarPedidoPage from './pages/GenerarPedidoPage.jsx';
 import ManejarPedidosPage from './pages/ManejarPedidosPage.jsx';
 import InventarioPage from './pages/InventarioPage.jsx';
 import EmpleadosPage from './pages/EmpleadosPage.jsx';
+import MisTurnosPage from './pages/MisTurnosPage.jsx';
 
-// Componente simple que protege las rutas privadas: si no hay sesión, manda al login
+// Protege el acceso privado: exige que exista un empleado con sesión activa
 function RutaPrivada({ children }) {
   const { user, loading } = useAuth();
 
@@ -24,14 +26,28 @@ function RutaPrivada({ children }) {
   return children;
 }
 
-// Define todas las rutas (páginas) de la aplicación del restaurante
+// Protege una sección específica: si el cargo no tiene permiso, redirige a su pantalla inicial
+function RutaPorRol({ seccion, children }) {
+  const { user } = useAuth();
+
+  if (!puedeVerSeccion(user?.CARGO, seccion)) {
+    return <Navigate to={getRutaInicial(user?.CARGO)} replace />;
+  }
+
+  return children;
+}
+
+// Define todas las rutas de la aplicación y qué roles pueden entrar a cada una
 export default function App() {
   const { user } = useAuth();
 
   return (
     <Routes>
-      {/* Ruta pública: si ya inició sesión lo redirige directo a /reservas */}
-      <Route path="/login" element={user ? <Navigate to="/reservas" replace /> : <LoginPage />} />
+      {/* Ruta pública: si ya inició sesión, va a la pantalla inicial de su cargo */}
+      <Route
+        path="/login"
+        element={user ? <Navigate to={getRutaInicial(user.CARGO)} replace /> : <LoginPage />}
+      />
 
       {/* Rutas privadas envueltas con el menú lateral (Layout) */}
       <Route
@@ -42,13 +58,64 @@ export default function App() {
           </RutaPrivada>
         }
       >
-        <Route index element={<Navigate to="/reservas" replace />} />
-        <Route path="reservas/crear" element={<CrearReservaPage />} />
-        <Route path="reservas" element={<ManejarReservasPage />} />
-        <Route path="pedidos/crear" element={<GenerarPedidoPage />} />
-        <Route path="pedidos" element={<ManejarPedidosPage />} />
-        <Route path="inventario" element={<InventarioPage />} />
-        <Route path="empleados" element={<EmpleadosPage />} />
+        <Route index element={<Navigate to={getRutaInicial(user?.CARGO)} replace />} />
+
+        <Route
+          path="reservas/crear"
+          element={
+            <RutaPorRol seccion="reservas">
+              <CrearReservaPage />
+            </RutaPorRol>
+          }
+        />
+        <Route
+          path="reservas"
+          element={
+            <RutaPorRol seccion="reservas">
+              <ManejarReservasPage />
+            </RutaPorRol>
+          }
+        />
+        <Route
+          path="pedidos/crear"
+          element={
+            <RutaPorRol seccion="pedidos">
+              <GenerarPedidoPage />
+            </RutaPorRol>
+          }
+        />
+        <Route
+          path="pedidos"
+          element={
+            <RutaPorRol seccion="pedidos">
+              <ManejarPedidosPage />
+            </RutaPorRol>
+          }
+        />
+        <Route
+          path="mis-turnos"
+          element={
+            <RutaPorRol seccion="misTurnos">
+              <MisTurnosPage />
+            </RutaPorRol>
+          }
+        />
+        <Route
+          path="inventario"
+          element={
+            <RutaPorRol seccion="inventario">
+              <InventarioPage />
+            </RutaPorRol>
+          }
+        />
+        <Route
+          path="empleados"
+          element={
+            <RutaPorRol seccion="empleados">
+              <EmpleadosPage />
+            </RutaPorRol>
+          }
+        />
       </Route>
 
       {/* Cualquier ruta desconocida vuelve al inicio */}

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { puedeBorrar } from '../utils/permissions.js';
 import { createCrud, deleteCrud, listCrud, updateCrud } from '../services/crud.service.js';
 import {
   getRecetas,
@@ -14,7 +16,9 @@ import { Badge, Button, Card, Input, Modal, Select, Table } from '../components/
 
 // Página de manejo de inventario: stock de ingredientes, ingreso de suministros y recetas
 export default function InventarioPage() {
+  const { user } = useAuth();
   const { notify } = useToast();
+  const permiteBorrar = puedeBorrar(user?.CARGO, 'inventario');
 
   const [tab, setTab] = useState('stock');
   const [inventario, setInventario] = useState([]);
@@ -189,9 +193,11 @@ export default function InventarioPage() {
           <Button size="sm" variant="secondary" onClick={() => abrirEditarIngrediente(i)}>
             <Pencil size={14} />
           </Button>
-          <Button size="sm" variant="danger" onClick={() => handleEliminarIngrediente(i.ID_INGREDIENTE)}>
-            <Trash2 size={14} />
-          </Button>
+          {permiteBorrar && (
+            <Button size="sm" variant="danger" onClick={() => handleEliminarIngrediente(i.ID_INGREDIENTE)}>
+              <Trash2 size={14} />
+            </Button>
+          )}
         </div>
       ),
     },

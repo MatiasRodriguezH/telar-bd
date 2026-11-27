@@ -42,9 +42,9 @@ export default function GenerarPedidoPage() {
         setMesas(listaMesas);
         setPlatos(listaPlatos);
 
-        // Según BCMRACUF_GESTOR_PEDIDO, solo GARZON o ADMINISTRADOR pueden abrir pedidos
+        // Según BCMRACUF_GESTOR_PEDIDO, GARZON, ENCARGADO o ADMINISTRADOR pueden abrir pedidos
         const habilitados = listaEmpleados.filter((e) =>
-          ['GARZON', 'ADMINISTRADOR'].includes(e.CARGO)
+          ['GARZON', 'ADMINISTRADOR', 'ENCARGADO'].includes(e.CARGO)
         );
         setGarzones(habilitados);
       } catch (err) {

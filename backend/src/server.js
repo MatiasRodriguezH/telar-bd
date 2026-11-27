@@ -12,7 +12,7 @@ app.use(cors());
 app.use(express.json());
 
 // =============================================================================
-// UTILIDADES SIMPLES DE SESION 
+// UTILIDADES SIMPLES DE SESION Y PERMISOS POR ROL
 // =============================================================================
 
 // Crea un token simple en base64 + firma para recordar qué empleado inició sesión
@@ -49,6 +49,19 @@ function requireAuth(req, res, next) {
   next();
 }
 
+// Middleware: permite continuar solo si el CARGO del empleado está en la lista permitida
+function requireRoles(...rolesPermitidos) {
+  return (req, res, next) => {
+    const cargo = String(req.user?.CARGO || '').toUpperCase();
+    if (!rolesPermitidos.includes(cargo)) {
+      return res.status(403).json({
+        message: 'No tienes permisos suficientes para realizar esta acción.',
+      });
+    }
+    next();
+  };
+}
+
 // Helper para envolver rutas async y devolver errores limpios de Oracle
 function handleRoute(fn) {
   return async (req, res) => {
@@ -75,7 +88,7 @@ app.get(
 );
 
 // =============================================================================
-// 2. AUTENTICACION DE EMPLEADOS (GESTIONADA EN EL BACKEND)
+// 2. AUTENTICACION DE EMPLEADOS (GESTIONADA EN EL BACKEND POR RUT)
 // =============================================================================
 
 // Busca al empleado por su RUT en Oracle (acepta con o sin puntos) y valida la contraseña en el backend
@@ -113,13 +126,14 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
 });
 
 // =============================================================================
-// 3. MANTENEDORES CRUD (05_CRUDS.sql)
+// 3. MANTENEDORES CRUD (05_CRUDS.sql) PROTEGIDOS POR ROL
 // =============================================================================
 
-// --- CLIENTES ---
+// --- CLIENTES (Reservas: ADMIN, ENCARGADO y GARZON; borrar solo ADMIN) ---
 app.get(
   '/api/crud/clientes',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'GARZON'),
   handleRoute(async (_req, res) => {
     const { cursor } = await callPlsql(`BEGIN BCMRACUF_SEL_CLIENTE(:cursor); END;`, {
       cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
@@ -131,6 +145,7 @@ app.get(
 app.post(
   '/api/crud/clientes',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'GARZON'),
   handleRoute(async (req, res) => {
     const { rut_cliente, nombres, apellido_paterno, apellido_materno, correo, telefono } = req.body;
     await callPlsql(
@@ -151,6 +166,7 @@ app.post(
 app.delete(
   '/api/crud/clientes/:rut',
   requireAuth,
+  requireRoles('ADMINISTRADOR'),
   handleRoute(async (req, res) => {
     await callPlsql(`BEGIN BCMRACUF_CRUD_CLIENTE('D', :rut); END;`, {
       rut: req.params.rut,
@@ -163,6 +179,7 @@ app.delete(
 app.get(
   '/api/crud/acompanantes',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'GARZON'),
   handleRoute(async (_req, res) => {
     const { cursor } = await callPlsql(`BEGIN BCMRACUF_SEL_ACOMPANANTE(:cursor); END;`, {
       cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
@@ -175,6 +192,7 @@ app.get(
 app.get(
   '/api/crud/mesas',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'GARZON'),
   handleRoute(async (_req, res) => {
     const { cursor } = await callPlsql(`BEGIN BCMRACUF_SEL_MESA(:cursor); END;`, {
       cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
@@ -183,11 +201,16 @@ app.get(
   })
 );
 
-// --- EMPLEADOS ---
+// --- EMPLEADOS (Gestión: ADMIN y ENCARGADO; borrar solo ADMIN; GARZON solo ve su propio perfil al crear pedidos) ---
 app.get(
   '/api/crud/empleados',
   requireAuth,
-  handleRoute(async (_req, res) => {
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'GARZON'),
+  handleRoute(async (req, res) => {
+    // Si es GARZON, devolvemos solo sus propios datos (sin exponer sueldos de otros empleados)
+    if (req.user.CARGO === 'GARZON') {
+      return res.json([req.user]);
+    }
     const { cursor } = await callPlsql(`BEGIN BCMRACUF_SEL_EMPLEADO(:cursor); END;`, {
       cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
     });
@@ -198,6 +221,7 @@ app.get(
 app.post(
   '/api/crud/empleados',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO'),
   handleRoute(async (req, res) => {
     const b = req.body;
     await callPlsql(
@@ -220,6 +244,7 @@ app.post(
 app.put(
   '/api/crud/empleados/:rut',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO'),
   handleRoute(async (req, res) => {
     const b = req.body;
     await callPlsql(
@@ -242,6 +267,7 @@ app.put(
 app.delete(
   '/api/crud/empleados/:rut',
   requireAuth,
+  requireRoles('ADMINISTRADOR'),
   handleRoute(async (req, res) => {
     await callPlsql(`BEGIN BCMRACUF_CRUD_EMPLEADO('D', :rut); END;`, {
       rut: req.params.rut,
@@ -250,10 +276,11 @@ app.delete(
   })
 );
 
-// --- TURNOS ---
+// --- TURNOS (Catálogo de horarios: ADMIN y ENCARGADO) ---
 app.get(
   '/api/crud/turnos',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO'),
   handleRoute(async (_req, res) => {
     const { cursor } = await callPlsql(`BEGIN BCMRACUF_SEL_TURNO(:cursor); END;`, {
       cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
@@ -262,10 +289,11 @@ app.get(
   })
 );
 
-// --- CATEGORIAS Y PLATOS ---
+// --- CATEGORIAS Y PLATOS (Consulta usada en Pedidos y Recetas) ---
 app.get(
   '/api/crud/categorias',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'GARZON', 'BODEGUERO'),
   handleRoute(async (_req, res) => {
     const { cursor } = await callPlsql(`BEGIN BCMRACUF_SEL_CATEGORIA(:cursor); END;`, {
       cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
@@ -277,6 +305,7 @@ app.get(
 app.get(
   '/api/crud/platos',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'GARZON', 'BODEGUERO'),
   handleRoute(async (_req, res) => {
     const { cursor } = await callPlsql(`BEGIN BCMRACUF_SEL_PLATO(:cursor); END;`, {
       cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
@@ -285,10 +314,11 @@ app.get(
   })
 );
 
-// --- INGREDIENTES ---
+// --- INGREDIENTES (Inventario: ADMIN, ENCARGADO y BODEGUERO; borrar solo ADMIN y BODEGUERO) ---
 app.get(
   '/api/crud/ingredientes',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'BODEGUERO'),
   handleRoute(async (_req, res) => {
     const { cursor } = await callPlsql(`BEGIN BCMRACUF_SEL_INGREDIENTE(:cursor); END;`, {
       cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
@@ -300,6 +330,7 @@ app.get(
 app.post(
   '/api/crud/ingredientes',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'BODEGUERO'),
   handleRoute(async (req, res) => {
     const { nombre, unidad_base, stock_actual } = req.body;
     const out = await callPlsql(
@@ -318,6 +349,7 @@ app.post(
 app.put(
   '/api/crud/ingredientes/:id',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'BODEGUERO'),
   handleRoute(async (req, res) => {
     const { nombre, unidad_base, stock_actual } = req.body;
     await callPlsql(
@@ -336,6 +368,7 @@ app.put(
 app.delete(
   '/api/crud/ingredientes/:id',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'BODEGUERO'),
   handleRoute(async (req, res) => {
     await callPlsql(`BEGIN BCMRACUF_CRUD_INGREDIENTE('D', :id); END;`, {
       id: { dir: oracledb.BIND_INOUT, type: oracledb.NUMBER, val: Number(req.params.id) },
@@ -344,10 +377,11 @@ app.delete(
   })
 );
 
-// --- PROVEEDORES Y BODEGAS ---
+// --- PROVEEDORES Y BODEGAS (Inventario: ADMIN, ENCARGADO y BODEGUERO) ---
 app.get(
   '/api/crud/proveedores',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'BODEGUERO'),
   handleRoute(async (_req, res) => {
     const { cursor } = await callPlsql(`BEGIN BCMRACUF_SEL_PROVEEDOR(:cursor); END;`, {
       cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
@@ -359,6 +393,7 @@ app.get(
 app.get(
   '/api/crud/bodegas',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'BODEGUERO'),
   handleRoute(async (_req, res) => {
     const { cursor } = await callPlsql(`BEGIN BCMRACUF_SEL_BODEGA(:cursor); END;`, {
       cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
@@ -368,13 +403,14 @@ app.get(
 );
 
 // =============================================================================
-// 4. LOS 5 GESTORES DE INFORMACION (06_GESTORES.sql)
+// 4. LOS 5 GESTORES DE INFORMACION (06_GESTORES.sql) PROTEGIDOS POR ROL
 // =============================================================================
 
-// --- GESTOR 01: RESERVAS ---
+// --- GESTOR 01: RESERVAS (Ver/Crear: ADMIN, ENCARGADO, GARZON; Borrar: solo ADMIN y GARZON) ---
 app.get(
   '/api/gestores/reservas',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'GARZON'),
   handleRoute(async (_req, res) => {
     const { cursor } = await callPlsql(`BEGIN BCMRACUF_SEL_RESERVAS(:cursor); END;`, {
       cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
@@ -386,6 +422,7 @@ app.get(
 app.post(
   '/api/gestores/reservas',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'GARZON'),
   handleRoute(async (req, res) => {
     const { rut_cliente, num_mesa, inicio, fin, comensales, nombre_acompanante } = req.body;
 
@@ -420,10 +457,11 @@ app.post(
   })
 );
 
-// Permite cancelar/eliminar una reserva desde la página de Manejar Reservas
+// Permite cancelar/eliminar una reserva (ENCARGADO no puede borrar)
 app.delete(
   '/api/gestores/reservas/:id',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'GARZON'),
   handleRoute(async (req, res) => {
     const result = await executeSql(
       `DELETE FROM BCMRACUF_RESERVA WHERE ID_RESERVA = :id`,
@@ -437,14 +475,22 @@ app.delete(
   })
 );
 
-// --- GESTOR 02: ASIGNACION DE TURNOS ---
+// --- GESTOR 02: ASIGNACION DE TURNOS (GARZON solo ve sus propios turnos; solo ADMIN y ENCARGADO asignan) ---
 app.get(
   '/api/gestores/turnos',
   requireAuth,
-  handleRoute(async (_req, res) => {
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'GARZON'),
+  handleRoute(async (req, res) => {
     const { cursor } = await callPlsql(`BEGIN BCMRACUF_SEL_ASIGNACIONES(:cursor); END;`, {
       cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
     });
+
+    // Regla de negocio: un GARZON solo puede ver sus propios turnos asignados
+    if (req.user.CARGO === 'GARZON') {
+      const misTurnos = cursor.filter((t) => t.RUT_EMPLEADO === req.user.RUT_EMPLEADO);
+      return res.json(misTurnos);
+    }
+
     res.json(cursor);
   })
 );
@@ -452,6 +498,7 @@ app.get(
 app.post(
   '/api/gestores/turnos',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO'),
   handleRoute(async (req, res) => {
     const { rut_empleado, id_turno, fecha } = req.body;
     await callPlsql(
@@ -466,10 +513,11 @@ app.post(
   })
 );
 
-// --- GESTOR 03: PEDIDOS Y DETALLE ---
+// --- GESTOR 03: PEDIDOS Y DETALLE (Ver/Crear/Agregar: ADMIN, ENCARGADO, GARZON; Borrar: solo ADMIN y GARZON) ---
 app.get(
   '/api/gestores/pedidos',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'GARZON'),
   handleRoute(async (_req, res) => {
     const { cursor } = await callPlsql(`BEGIN BCMRACUF_SEL_PEDIDOS(:cursor); END;`, {
       cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
@@ -482,6 +530,7 @@ app.get(
 app.get(
   '/api/gestores/pedidos/:id/detalle',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'GARZON'),
   handleRoute(async (req, res) => {
     const result = await executeSql(
       `SELECT DP.ID_PEDIDO,
@@ -503,6 +552,7 @@ app.get(
 app.post(
   '/api/gestores/pedidos',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'GARZON'),
   handleRoute(async (req, res) => {
     const { num_mesa, rut_empleado, propina } = req.body;
     const out = await callPlsql(
@@ -521,6 +571,7 @@ app.post(
 app.post(
   '/api/gestores/pedidos/:id/detalle',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'GARZON'),
   handleRoute(async (req, res) => {
     const { id_plato, cantidad } = req.body;
     const out = await callPlsql(
@@ -536,10 +587,11 @@ app.post(
   })
 );
 
-// Elimina un pedido junto con su detalle dentro de una sola transacción en Oracle
+// Elimina un pedido junto con su detalle dentro de una sola transacción (ENCARGADO no puede borrar)
 app.delete(
   '/api/gestores/pedidos/:id',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'GARZON'),
   handleRoute(async (req, res) => {
     const id = Number(req.params.id);
     await withConnection(async (connection) => {
@@ -551,10 +603,11 @@ app.delete(
   })
 );
 
-// --- GESTOR 04: RECETAS ---
+// --- GESTOR 04: RECETAS (Inventario: ADMIN, ENCARGADO y BODEGUERO) ---
 app.get(
   '/api/gestores/recetas',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'BODEGUERO'),
   handleRoute(async (_req, res) => {
     const { cursor } = await callPlsql(`BEGIN BCMRACUF_SEL_RECETAS(:cursor); END;`, {
       cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
@@ -566,6 +619,7 @@ app.get(
 app.post(
   '/api/gestores/recetas',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'BODEGUERO'),
   handleRoute(async (req, res) => {
     const { id_plato, id_ingrediente, cantidad_por_porcion } = req.body;
     await callPlsql(`BEGIN BCMRACUF_GESTOR_RECETA(:id_plato, :id_ing, :cant); END;`, {
@@ -577,10 +631,11 @@ app.post(
   })
 );
 
-// --- GESTOR 05: SUMINISTROS ---
+// --- GESTOR 05: SUMINISTROS (Inventario: ADMIN, ENCARGADO y BODEGUERO) ---
 app.get(
   '/api/gestores/suministros',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'BODEGUERO'),
   handleRoute(async (_req, res) => {
     const { cursor } = await callPlsql(`BEGIN BCMRACUF_SEL_SUMINISTROS(:cursor); END;`, {
       cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
@@ -592,6 +647,7 @@ app.get(
 app.post(
   '/api/gestores/suministros',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'BODEGUERO'),
   handleRoute(async (req, res) => {
     const { rut_proveedor, id_ingrediente, id_bodega, cantidad } = req.body;
     const out = await callPlsql(
@@ -614,12 +670,13 @@ app.post(
 );
 
 // =============================================================================
-// 5. LOS 3 REPORTES ESTRATEGICOS (07_REPORTES.sql)
+// 5. LOS 3 REPORTES ESTRATEGICOS (07_REPORTES.sql) PROTEGIDOS POR ROL
 // =============================================================================
 
 app.get(
   '/api/reportes/ventas-plato',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'GARZON'),
   handleRoute(async (_req, res) => {
     const { cursor } = await callPlsql(`BEGIN BCMRACUF_REP_VENTAS_PLATO(:cursor); END;`, {
       cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
@@ -631,6 +688,7 @@ app.get(
 app.get(
   '/api/reportes/garzones',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO'),
   handleRoute(async (_req, res) => {
     const { cursor } = await callPlsql(`BEGIN BCMRACUF_REP_GARZONES(:cursor); END;`, {
       cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },
@@ -642,6 +700,7 @@ app.get(
 app.get(
   '/api/reportes/inventario',
   requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'BODEGUERO'),
   handleRoute(async (_req, res) => {
     const { cursor } = await callPlsql(`BEGIN BCMRACUF_REP_INVENTARIO(:cursor); END;`, {
       cursor: { dir: oracledb.BIND_OUT, type: oracledb.CURSOR },

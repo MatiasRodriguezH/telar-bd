@@ -55,6 +55,6 @@ Abre `http://localhost:5173` e inicia sesión con el RUT de cualquiera de las cu
 - **Administrador:** `20.451.892-4` / `Admin1234`
 - **Garzón:** `20.612.345-8` / `Garzon1234`
 - **Bodeguero:** `20.789.123-1` / `Bodega1234`
-- **Cocinero:** `16.543.210-5` / `Cocina1234`
+- **Encargado:** `16.543.210-5` / `Encargado1234`
 
 ---

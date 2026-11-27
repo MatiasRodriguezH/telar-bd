@@ -82,9 +82,10 @@ export function formatNombreCompleto(persona) {
 }
 export const CARGO_CONFIG = {
   ADMINISTRADOR: { label: 'Administrador', variant: 'primary' },
+  ENCARGADO: { label: 'Encargado', variant: 'success' },
   GARZON: { label: 'Garzón', variant: 'info' },
   BODEGUERO: { label: 'Bodeguero', variant: 'warning' },
-  COCINERO: { label: 'Cocinero', variant: 'success' },
+  COCINERO: { label: 'Cocinero', variant: 'neutral' },
 };
 
 export const ESTADO_STOCK_CONFIG = {

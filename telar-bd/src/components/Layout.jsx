@@ -6,24 +6,27 @@ import {
   ClipboardList,
   Package,
   Users,
+  Clock,
   LogOut,
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { Badge, Button } from './ui/index.jsx';
 import { CARGO_CONFIG } from '../utils/formatters.js';
+import { puedeVerSeccion } from '../utils/permissions.js';
 import './Layout.css';
 
-// Menú principal con enlaces a cada una de las páginas del sistema
+// Menú completo; cada enlace indica a qué sección de permisos pertenece
 const MENU_ITEMS = [
-  { to: '/reservas/crear', label: 'Crear Reserva', icon: CalendarPlus },
-  { to: '/reservas', label: 'Manejar Reservas', icon: CalendarCheck, end: true },
-  { to: '/pedidos/crear', label: 'Generar Pedido', icon: UtensilsCrossed },
-  { to: '/pedidos', label: 'Manejar Pedidos', icon: ClipboardList, end: true },
-  { to: '/inventario', label: 'Inventario', icon: Package },
-  { to: '/empleados', label: 'Empleados', icon: Users },
+  { to: '/reservas/crear', label: 'Crear Reserva', icon: CalendarPlus, seccion: 'reservas' },
+  { to: '/reservas', label: 'Manejar Reservas', icon: CalendarCheck, end: true, seccion: 'reservas' },
+  { to: '/pedidos/crear', label: 'Generar Pedido', icon: UtensilsCrossed, seccion: 'pedidos' },
+  { to: '/pedidos', label: 'Manejar Pedidos', icon: ClipboardList, end: true, seccion: 'pedidos' },
+  { to: '/mis-turnos', label: 'Mis Turnos', icon: Clock, seccion: 'misTurnos' },
+  { to: '/inventario', label: 'Inventario', icon: Package, seccion: 'inventario' },
+  { to: '/empleados', label: 'Empleados', icon: Users, seccion: 'empleados' },
 ];
 
-// Marco principal que envuelve todas las páginas privadas con el menú lateral
+// Marco principal que envuelve las páginas privadas y filtra el menú según el cargo del empleado
 export default function Layout() {
   const { user, cerrarSesion } = useAuth();
   const navigate = useNavigate();
@@ -34,11 +37,13 @@ export default function Layout() {
     navigate('/login');
   }
 
+  // Solo mostramos en la barra lateral las secciones que el cargo actual tiene permitidas
+  const menuVisible = MENU_ITEMS.filter((item) => puedeVerSeccion(user?.CARGO, item.seccion));
   const cargoInfo = CARGO_CONFIG[user?.CARGO] || { label: user?.CARGO, variant: 'neutral' };
 
   return (
     <div className="app-layout">
-      {/* Barra lateral de navegación */}
+      {/* Barra lateral de navegación filtrada por rol */}
       <aside className="sidebar">
         <div className="sidebar-brand">
           <h1>Las Viejas Cochinas</h1>
@@ -46,7 +51,7 @@ export default function Layout() {
         </div>
 
         <nav className="sidebar-nav">
-          {MENU_ITEMS.map((item) => {
+          {menuVisible.map((item) => {
             const Icon = item.icon;
             return (
               <NavLink

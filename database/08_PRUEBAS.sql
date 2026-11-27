@@ -100,7 +100,7 @@ BEGIN
     BCMRACUF_CRUD_EMPLEADO('I', '20.612.345-8', 'Matias', 'Rodriguez', 'Silva', 'GARZON', 780000, '+56922223333', 'Garzon1234');
     BCMRACUF_CRUD_EMPLEADO('I', '20.789.123-1', 'Alejandro', 'Caris', 'Mendez', 'BODEGUERO', 820000, '+56933334444', 'Bodega1234');
     BCMRACUF_CRUD_EMPLEADO('I', '20.834.567-9', 'Ulises', 'Figueroa', 'Paredes', 'GARZON', 780000, '+56944445555', 'Garzon1234');
-    BCMRACUF_CRUD_EMPLEADO('I', '16.543.210-5', 'Rosa', 'Munoz', 'Contreras', 'COCINERO', 900000, '+56955556666', 'Cocina1234');
+    BCMRACUF_CRUD_EMPLEADO('I', '16.543.210-5', 'Rosa', 'Munoz', 'Contreras', 'ENCARGADO', 1050000, '+56955556666', 'Encargado1234');
 
     -- CRUD 05: TURNOS (EN MINUTOS DESDE LAS 00:00)
     BCMRACUF_CRUD_TURNO('I', V_ID_TURNO_1, 720, 990);   -- 12:00 A 16:30 (ALMUERZO)

@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { puedeBorrar } from '../utils/permissions.js';
 import { createCrud, deleteCrud, listCrud, updateCrud } from '../services/crud.service.js';
 import { asignarTurno, getAsignacionesTurno } from '../services/gestores.service.js';
 import { getReporteGarzones } from '../services/reportes.service.js';
@@ -9,9 +11,9 @@ import { Badge, Button, Card, Input, Modal, Select, Table } from '../components/
 
 const CARGOS_OPCIONES = [
   { value: 'ADMINISTRADOR', label: 'Administrador' },
+  { value: 'ENCARGADO', label: 'Encargado' },
   { value: 'GARZON', label: 'Garzón' },
   { value: 'BODEGUERO', label: 'Bodeguero' },
-  { value: 'COCINERO', label: 'Cocinero' },
 ];
 
 const FORM_INICIAL = {
@@ -27,7 +29,9 @@ const FORM_INICIAL = {
 
 // Página de manejo de empleados: CRUD de personal, asignación de turnos y desempeño
 export default function EmpleadosPage() {
+  const { user } = useAuth();
   const { notify } = useToast();
+  const permiteBorrar = puedeBorrar(user?.CARGO, 'empleados');
 
   const [tab, setTab] = useState('personal');
   const [empleados, setEmpleados] = useState([]);
@@ -174,9 +178,11 @@ export default function EmpleadosPage() {
           <Button size="sm" variant="secondary" onClick={() => abrirEditar(e)}>
             <Pencil size={14} />
           </Button>
-          <Button size="sm" variant="danger" onClick={() => handleEliminarEmpleado(e.RUT_EMPLEADO)}>
-            <Trash2 size={14} />
-          </Button>
+          {permiteBorrar && (
+            <Button size="sm" variant="danger" onClick={() => handleEliminarEmpleado(e.RUT_EMPLEADO)}>
+              <Trash2 size={14} />
+            </Button>
+          )}
         </div>
       ),
     },

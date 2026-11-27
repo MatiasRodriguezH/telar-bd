@@ -2,14 +2,15 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
+import { getRutaInicial } from '../utils/permissions.js';
 import { Button, Card, Input } from '../components/ui/index.jsx';
 
 // Cuentas de ejemplo cargadas en 08_PRUEBAS.sql (el inicio de sesión es con RUT)
 const CUENTAS_DEMO = [
   { rut: '20.451.892-4', nombre: 'Bárbara Concha', pass: 'Admin1234', cargo: 'ADMINISTRADOR' },
+  { rut: '16.543.210-5', nombre: 'Rosa Muñoz', pass: 'Encargado1234', cargo: 'ENCARGADO' },
   { rut: '20.612.345-8', nombre: 'Matías Rodríguez', pass: 'Garzon1234', cargo: 'GARZON' },
   { rut: '20.789.123-1', nombre: 'Alejandro Caris', pass: 'Bodega1234', cargo: 'BODEGUERO' },
-  { rut: '16.543.210-5', nombre: 'Rosa Muñoz', pass: 'Cocina1234', cargo: 'COCINERO' },
 ];
 
 // Página de inicio de sesión exclusiva para empleados registrados en BCMRACUF_EMPLEADO
@@ -35,7 +36,7 @@ export default function LoginPage() {
     try {
       const empleado = await iniciarSesion(rut, contrasena);
       notify('success', `Bienvenido, ${empleado.NOMBRES}`);
-      navigate('/reservas');
+      navigate(getRutaInicial(empleado.CARGO));
     } catch (err) {
       notify('error', err.message);
     } finally {
