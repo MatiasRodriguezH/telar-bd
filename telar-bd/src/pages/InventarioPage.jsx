@@ -217,20 +217,66 @@ export default function InventarioPage() {
     { key: 'BODEGA_DESTINO', label: 'Bodega' },
   ];
 
+  // Agrupa los ingredientes por plato; PLATOS_DISPONIBLES ya viene calculado desde Oracle (BCMRACUF_F_PLATOS_DISPONIBLES)
+  const recetasPorPlato = platos.map((plato) => ({
+    ID_PLATO: plato.ID_PLATO,
+    NOMBRE_PLATO: plato.NOMBRE_PLATO,
+    NOMBRE_CATEGORIA: plato.NOMBRE_CATEGORIA,
+    ingredientes: recetas.filter((r) => Number(r.ID_PLATO) === Number(plato.ID_PLATO)),
+    platosRestantes: plato.PLATOS_DISPONIBLES ?? null,
+  }));
+
   const columnasRecetas = [
-    { key: 'NOMBRE_PLATO', label: 'Plato' },
-    { key: 'NOMBRE_INGREDIENTE', label: 'Ingrediente' },
     {
-      key: 'CANTIDAD_POR_PORCION',
-      label: 'Por porción',
-      align: 'right',
-      render: (r) => `${r.CANTIDAD_POR_PORCION} ${r.UNIDAD_BASE}`,
+      key: 'NOMBRE_PLATO',
+      label: 'Plato',
+      render: (p) => (
+        <div>
+          <strong>{p.NOMBRE_PLATO}</strong>
+          <div style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+            {p.NOMBRE_CATEGORIA}
+          </div>
+        </div>
+      ),
     },
     {
-      key: 'STOCK_ACTUAL',
-      label: 'Stock Disp.',
-      align: 'right',
-      render: (r) => `${r.STOCK_ACTUAL} ${r.UNIDAD_BASE}`,
+      key: 'ingredientes',
+      label: 'Ingredientes (uso por porción)',
+      render: (p) =>
+        p.ingredientes.length > 0 ? (
+          <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gap: '4px' }}>
+            {p.ingredientes.map((ing) => (
+              <li key={ing.ID_INGREDIENTE} style={{ fontSize: 'var(--text-sm)' }}>
+                <strong>{ing.NOMBRE_INGREDIENTE}:</strong> {ing.CANTIDAD_POR_PORCION}{' '}
+                {ing.UNIDAD_BASE}{' '}
+                <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+                  (quedan {ing.STOCK_ACTUAL} {ing.UNIDAD_BASE})
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <span style={{ fontSize: 'var(--text-xs)', color: 'var(--text-muted)' }}>
+            Sin ingredientes asignados
+          </span>
+        ),
+    },
+    {
+      key: 'platosRestantes',
+      label: 'Platos disponibles',
+      align: 'center',
+      render: (p) => {
+        if (p.platosRestantes === null) {
+          return <Badge variant="neutral">Sin receta</Badge>;
+        }
+        if (p.platosRestantes <= 0) {
+          return <Badge variant="danger">0 disponibles</Badge>;
+        }
+        if (p.platosRestantes <= 5) {
+          return <Badge variant="warning">Quedan {p.platosRestantes}</Badge>;
+        }
+        return <Badge variant="success">{p.platosRestantes} disponibles</Badge>;
+      },
     },
   ];
 
@@ -371,7 +417,12 @@ export default function InventarioPage() {
             </form>
           </Card>
 
-          <Table columns={columnasRecetas} data={recetas} emptyTitle="Sin recetas registradas" />
+          <Table
+            columns={columnasRecetas}
+            data={recetasPorPlato}
+            rowKey="ID_PLATO"
+            emptyTitle="Sin platos registrados"
+          />
         </div>
       )}
 

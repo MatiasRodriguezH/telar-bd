@@ -9,6 +9,7 @@ import GenerarPedidoPage from './pages/GenerarPedidoPage.jsx';
 import ManejarPedidosPage from './pages/ManejarPedidosPage.jsx';
 import InventarioPage from './pages/InventarioPage.jsx';
 import EmpleadosPage from './pages/EmpleadosPage.jsx';
+import ClientesPage from './pages/ClientesPage.jsx';
 import MisTurnosPage from './pages/MisTurnosPage.jsx';
 
 // Protege el acceso privado: exige que exista un empleado con sesión activa
@@ -97,6 +98,14 @@ export default function App() {
           element={
             <RutaPorRol seccion="misTurnos">
               <MisTurnosPage />
+            </RutaPorRol>
+          }
+        />
+        <Route
+          path="clientes"
+          element={
+            <RutaPorRol seccion="clientes">
+              <ClientesPage />
             </RutaPorRol>
           }
         />

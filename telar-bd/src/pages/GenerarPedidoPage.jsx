@@ -250,7 +250,7 @@ export default function GenerarPedidoPage() {
             onChange={(e) => setIdPlatoSel(e.target.value)}
             options={platos.map((p) => ({
               value: p.ID_PLATO,
-              label: `[${p.NOMBRE_CATEGORIA}] ${p.NOMBRE_PLATO} — ${formatCLP(p.PRECIO_VIGENTE)}`,
+              label: `[${p.NOMBRE_CATEGORIA}] ${p.NOMBRE_PLATO} — ${formatCLP(p.PRECIO_VIGENTE)} (${p.PLATOS_DISPONIBLES ?? 0} disp.)`,
             }))}
           />
 

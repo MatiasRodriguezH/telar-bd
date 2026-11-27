@@ -20,7 +20,7 @@ DROP SEQUENCE BCMRACUF_SEQ_PEDIDO;
 DROP SEQUENCE BCMRACUF_SEQ_SUMINISTRO;
 
 ---------------------------------------------------------------------------------
--- 3. CREACION DE SECUENCIAS PARA ENTIDADES MAESTRAS
+-- 2. CREACION DE SECUENCIAS PARA ENTIDADES MAESTRAS
 ---------------------------------------------------------------------------------
 
 CREATE SEQUENCE BCMRACUF_SEQ_TURNO
@@ -64,7 +64,7 @@ CREATE SEQUENCE BCMRACUF_SEQ_BODEGA
     NOCYCLE;
 
 ---------------------------------------------------------------------------------
--- 4. CREACION DE SECUENCIAS PARA ENTIDADES TRANSACCIONALES
+-- 3. CREACION DE SECUENCIAS PARA ENTIDADES TRANSACCIONALES
 ---------------------------------------------------------------------------------
 
 CREATE SEQUENCE BCMRACUF_SEQ_RESERVA

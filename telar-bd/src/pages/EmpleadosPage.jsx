@@ -6,7 +6,8 @@ import { puedeBorrar } from '../utils/permissions.js';
 import { createCrud, deleteCrud, listCrud, updateCrud } from '../services/crud.service.js';
 import { asignarTurno, getAsignacionesTurno } from '../services/gestores.service.js';
 import { getReporteGarzones } from '../services/reportes.service.js';
-import { CARGO_CONFIG, formatCLP, formatMinutosAHora } from '../utils/formatters.js';
+import { CARGO_CONFIG, formatCLP, formatMinutosAHora, formatRut } from '../utils/formatters.js';
+import { validarRut } from '../utils/validators.js';
 import { Badge, Button, Card, Input, Modal, Select, Table } from '../components/ui/index.jsx';
 
 const CARGOS_OPCIONES = [
@@ -100,15 +101,22 @@ export default function EmpleadosPage() {
     setModalAbierto(true);
   }
 
-  // Crea o actualiza un empleado llamando a BCMRACUF_CRUD_EMPLEADO
+  // Crea o actualiza un empleado llamando a BCMRACUF_CRUD_EMPLEADO con RUT formateado
   async function handleGuardarEmpleado(e) {
     e.preventDefault();
+    const rutFormateado = formatRut(formEmp.rut_empleado);
+
+    if (!editRut && !validarRut(rutFormateado)) {
+      notify('warning', 'Ingresa un RUT válido (ej: 20.123.456-7).');
+      return;
+    }
+
     try {
       if (editRut) {
         await updateCrud('empleados', editRut, formEmp);
         notify('success', 'Empleado actualizado.');
       } else {
-        await createCrud('empleados', formEmp);
+        await createCrud('empleados', { ...formEmp, rut_empleado: rutFormateado });
         notify('success', 'Empleado creado correctamente.');
       }
       setModalAbierto(false);
@@ -321,6 +329,12 @@ export default function EmpleadosPage() {
             disabled={Boolean(editRut)}
             value={formEmp.rut_empleado}
             onChange={(e) => setFormEmp({ ...formEmp, rut_empleado: e.target.value })}
+            onBlur={() =>
+              setFormEmp((prev) => ({
+                ...prev,
+                rut_empleado: formatRut(prev.rut_empleado),
+              }))
+            }
           />
           <div className="form-grid">
             <Input

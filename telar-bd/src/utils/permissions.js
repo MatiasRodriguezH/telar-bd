@@ -2,6 +2,7 @@
 export const ROLES_POR_SECCION = {
   reservas: ['ADMINISTRADOR', 'ENCARGADO', 'GARZON'],
   pedidos: ['ADMINISTRADOR', 'ENCARGADO', 'GARZON'],
+  clientes: ['ADMINISTRADOR', 'ENCARGADO'],
   inventario: ['ADMINISTRADOR', 'ENCARGADO', 'BODEGUERO'],
   empleados: ['ADMINISTRADOR', 'ENCARGADO'],
   misTurnos: ['GARZON'],
@@ -13,11 +14,11 @@ export function puedeVerSeccion(cargo, seccion) {
   return permitidos.includes(String(cargo || '').toUpperCase());
 }
 
-// Devuelve true si el cargo puede borrar registros en esa sección (ENCARGADO nunca puede borrar)
+// Devuelve true si el cargo puede borrar registros en esa sección
 export function puedeBorrar(cargo, seccion) {
   const rol = String(cargo || '').toUpperCase();
   if (rol === 'ADMINISTRADOR') return true;
-  if (rol === 'ENCARGADO') return false;
+  if (rol === 'ENCARGADO') return seccion === 'reservas' || seccion === 'pedidos';
   if (rol === 'GARZON') return seccion === 'reservas' || seccion === 'pedidos';
   if (rol === 'BODEGUERO') return seccion === 'inventario';
   return false;

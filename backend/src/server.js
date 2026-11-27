@@ -2,7 +2,7 @@ import 'dotenv/config';
 import crypto from 'node:crypto';
 import express from 'express';
 import cors from 'cors';
-import { callPlsql, executeSql, formatOracleError, oracledb, withConnection } from './db.js';
+import { callPlsql, executeSql, formatOracleError, oracledb } from './db.js';
 
 const app = express();
 const PORT = Number(process.env.PORT || 3001);
@@ -60,6 +60,15 @@ function requireRoles(...rolesPermitidos) {
     }
     next();
   };
+}
+
+// Formatea cualquier RUT recibido (con o sin puntos/guion) al estándar XX.XXX.XXX-X
+function formatRut(rut = '') {
+  const clean = String(rut).replace(/[^0-9kK]/g, '').toUpperCase();
+  if (clean.length < 2) return clean;
+  const body = clean.slice(0, -1).replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  const dv = clean.slice(-1);
+  return `${body}-${dv}`;
 }
 
 // Helper para envolver rutas async y devolver errores limpios de Oracle
@@ -151,7 +160,7 @@ app.post(
     await callPlsql(
       `BEGIN BCMRACUF_CRUD_CLIENTE('I', :rut, :nombres, :pat, :mat, :correo, :tel); END;`,
       {
-        rut: rut_cliente,
+        rut: formatRut(rut_cliente),
         nombres,
         pat: apellido_paterno,
         mat: apellido_materno || null,
@@ -160,6 +169,27 @@ app.post(
       }
     );
     res.status(201).json({ message: 'Cliente registrado correctamente.' });
+  })
+);
+
+app.put(
+  '/api/crud/clientes/:rut',
+  requireAuth,
+  requireRoles('ADMINISTRADOR', 'ENCARGADO'),
+  handleRoute(async (req, res) => {
+    const { nombres, apellido_paterno, apellido_materno, correo, telefono } = req.body;
+    await callPlsql(
+      `BEGIN BCMRACUF_CRUD_CLIENTE('U', :rut, :nombres, :pat, :mat, :correo, :tel); END;`,
+      {
+        rut: req.params.rut,
+        nombres: nombres || null,
+        pat: apellido_paterno || null,
+        mat: apellido_materno || null,
+        correo: correo || null,
+        tel: telefono || null,
+      }
+    );
+    res.json({ message: 'Cliente actualizado correctamente.' });
   })
 );
 
@@ -227,7 +257,7 @@ app.post(
     await callPlsql(
       `BEGIN BCMRACUF_CRUD_EMPLEADO('I', :rut, :nombres, :pat, :mat, :cargo, :sueldo, :tel, :contrasena); END;`,
       {
-        rut: b.rut_empleado,
+        rut: formatRut(b.rut_empleado),
         nombres: b.nombres,
         pat: b.apellido_paterno,
         mat: b.apellido_materno || null,
@@ -424,12 +454,21 @@ app.post(
   requireAuth,
   requireRoles('ADMINISTRADOR', 'ENCARGADO', 'GARZON'),
   handleRoute(async (req, res) => {
-    const { rut_cliente, num_mesa, inicio, fin, comensales, nombre_acompanante } = req.body;
+    const { rut_cliente, num_mesa, inicio, fin, comensales, nombre_acompanante, acompanantes } =
+      req.body;
+
+    // Acepta lista de acompañantes (nuevo) o un solo nombre (compatibilidad)
+    const listaAcomp = Array.isArray(acompanantes)
+      ? acompanantes.map((n) => String(n || '').trim()).filter(Boolean)
+      : nombre_acompanante && String(nombre_acompanante).trim()
+        ? [String(nombre_acompanante).trim()]
+        : [];
 
     // Convertimos el formato de <input type="datetime-local"> (YYYY-MM-DDTHH:MM) a TIMESTAMP de Oracle
     const inicioStr = String(inicio || '').slice(0, 16);
     const finStr = String(fin || '').slice(0, 16);
 
+    // El primer acompañante (si existe) se registra directo en el gestor de reserva
     const out = await callPlsql(
       `BEGIN
          BCMRACUF_GESTOR_RESERVA(
@@ -449,19 +488,31 @@ app.post(
         inicio: inicioStr,
         fin: finStr,
         comensales: Number(comensales),
-        nombre_acomp: nombre_acompanante || null,
+        nombre_acomp: listaAcomp[0] || null,
       }
     );
+
+    // Si el usuario ingresó más acompañantes, los insertamos usando BCMRACUF_CRUD_ACOMPANANTE
+    for (let i = 1; i < listaAcomp.length; i++) {
+      await callPlsql(
+        `BEGIN BCMRACUF_CRUD_ACOMPANANTE('I', :rut_cliente, :nro, :nombre); END;`,
+        {
+          rut_cliente,
+          nro: { dir: oracledb.BIND_INOUT, type: oracledb.NUMBER, val: null },
+          nombre: listaAcomp[i],
+        }
+      );
+    }
 
     res.status(201).json({ id_reserva: out.id_reserva, message: 'Reserva creada correctamente.' });
   })
 );
 
-// Permite cancelar/eliminar una reserva (ENCARGADO no puede borrar)
+// Permite cancelar/eliminar una reserva (ADMIN, ENCARGADO y GARZON)
 app.delete(
   '/api/gestores/reservas/:id',
   requireAuth,
-  requireRoles('ADMINISTRADOR', 'GARZON'),
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'GARZON'),
   handleRoute(async (req, res) => {
     const result = await executeSql(
       `DELETE FROM BCMRACUF_RESERVA WHERE ID_RESERVA = :id`,
@@ -587,19 +638,16 @@ app.post(
   })
 );
 
-// Elimina un pedido junto con su detalle dentro de una sola transacción (ENCARGADO no puede borrar)
+// Elimina un pedido y repone el stock de ingredientes usando BCMRACUF_ELIMINAR_PEDIDO en Oracle
 app.delete(
   '/api/gestores/pedidos/:id',
   requireAuth,
-  requireRoles('ADMINISTRADOR', 'GARZON'),
+  requireRoles('ADMINISTRADOR', 'ENCARGADO', 'GARZON'),
   handleRoute(async (req, res) => {
-    const id = Number(req.params.id);
-    await withConnection(async (connection) => {
-      await connection.execute(`DELETE FROM BCMRACUF_DETALLE_PEDIDO WHERE ID_PEDIDO = :id`, { id });
-      await connection.execute(`DELETE FROM BCMRACUF_PEDIDO WHERE ID_PEDIDO = :id`, { id });
-      await connection.commit();
+    await callPlsql(`BEGIN BCMRACUF_ELIMINAR_PEDIDO(:id); END;`, {
+      id: Number(req.params.id),
     });
-    res.json({ message: 'Pedido eliminado.' });
+    res.json({ message: 'Pedido eliminado y stock de ingredientes repuesto.' });
   })
 );
 

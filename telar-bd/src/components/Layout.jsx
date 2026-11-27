@@ -6,6 +6,7 @@ import {
   ClipboardList,
   Package,
   Users,
+  Contact,
   Clock,
   LogOut,
 } from 'lucide-react';
@@ -22,6 +23,7 @@ const MENU_ITEMS = [
   { to: '/pedidos/crear', label: 'Generar Pedido', icon: UtensilsCrossed, seccion: 'pedidos' },
   { to: '/pedidos', label: 'Manejar Pedidos', icon: ClipboardList, end: true, seccion: 'pedidos' },
   { to: '/mis-turnos', label: 'Mis Turnos', icon: Clock, seccion: 'misTurnos' },
+  { to: '/clientes', label: 'Clientes', icon: Contact, seccion: 'clientes' },
   { to: '/inventario', label: 'Inventario', icon: Package, seccion: 'inventario' },
   { to: '/empleados', label: 'Empleados', icon: Users, seccion: 'empleados' },
 ];
@@ -47,7 +49,6 @@ export default function Layout() {
       <aside className="sidebar">
         <div className="sidebar-brand">
           <h1>Las Viejas Cochinas</h1>
-          <p>Sistema de Gestión — Talca</p>
         </div>
 
         <nav className="sidebar-nav">
