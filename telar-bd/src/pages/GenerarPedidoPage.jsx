@@ -4,7 +4,7 @@ import { Plus, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useToast } from '../context/ToastContext.jsx';
 import { listCrud } from '../services/crud.service.js';
-import { agregarDetallePedido, crearPedido } from '../services/gestores.service.js';
+import { agregarDetallePedido, crearPedido, eliminarPedido } from '../services/gestores.service.js';
 import { formatCLP } from '../utils/formatters.js';
 import { Button, Card, Input, Select, Table } from '../components/ui/index.jsx';
 
@@ -54,7 +54,7 @@ export default function GenerarPedidoPage() {
     cargarCatalogos();
   }, []);
 
-  // Agrega un plato a la lista temporal del pedido (si ya existe, suma su cantidad)
+  // Agrega un plato a la lista temporal validando que tenga porciones disponibles
   function handleAgregarPlato() {
     const plato = platos.find((p) => Number(p.ID_PLATO) === Number(idPlatoSel));
     const cantidad = Number(cantidadSel);
@@ -68,11 +68,23 @@ export default function GenerarPedidoPage() {
       return;
     }
 
+    const disponibles = Number(plato.PLATOS_DISPONIBLES ?? 0);
+    if (disponibles <= 0) {
+      notify('error', `"${plato.NOMBRE_PLATO}" está agotado (0 porciones disponibles).`);
+      return;
+    }
+
     const existe = items.find((i) => i.id_plato === plato.ID_PLATO);
+    const cantidadTotal = (existe ? existe.cantidad : 0) + cantidad;
+    if (cantidadTotal > disponibles) {
+      notify('warning', `Solo quedan ${disponibles} porciones disponibles de "${plato.NOMBRE_PLATO}".`);
+      return;
+    }
+
     if (existe) {
       setItems(
         items.map((i) =>
-          i.id_plato === plato.ID_PLATO ? { ...i, cantidad: i.cantidad + cantidad } : i
+          i.id_plato === plato.ID_PLATO ? { ...i, cantidad: cantidadTotal } : i
         )
       );
     } else {
@@ -114,6 +126,7 @@ export default function GenerarPedidoPage() {
     }
 
     setGuardando(true);
+    let idPedidoCreado = null;
     try {
       // Paso 1: Crear cabecera en BCMRACUF_PEDIDO
       const cabecera = await crearPedido({
@@ -121,18 +134,27 @@ export default function GenerarPedidoPage() {
         rut_empleado: rutEmpleado,
         propina: Number(propina || 0),
       });
+      idPedidoCreado = cabecera.id_pedido;
 
       // Paso 2: Insertar cada plato en BCMRACUF_DETALLE_PEDIDO (Oracle descuenta stock por trigger)
       for (const item of items) {
-        await agregarDetallePedido(cabecera.id_pedido, {
+        await agregarDetallePedido(idPedidoCreado, {
           id_plato: item.id_plato,
           cantidad: item.cantidad,
         });
       }
 
-      notify('success', `Pedido #${cabecera.id_pedido} generado correctamente.`);
+      notify('success', `Pedido #${idPedidoCreado} generado correctamente.`);
       navigate('/pedidos');
     } catch (err) {
+      // Si falló algún plato por stock insuficiente, anulamos la cabecera recién creada
+      if (idPedidoCreado) {
+        try {
+          await eliminarPedido(idPedidoCreado);
+        } catch {
+          // Si ya fue eliminado o falla el rollback, mostramos el error original
+        }
+      }
       notify('error', err.message);
     } finally {
       setGuardando(false);

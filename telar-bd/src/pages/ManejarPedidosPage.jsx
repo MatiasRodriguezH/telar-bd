@@ -69,18 +69,31 @@ export default function ManejarPedidosPage() {
     }
   }
 
-  // Agrega un plato adicional al pedido abierto en el modal (BCMRACUF_GESTOR_DET_PEDIDO)
+  // Agrega un plato adicional al pedido abierto en el modal validando disponibilidad
   async function handleAgregarPlatoExistente(e) {
     e.preventDefault();
-    if (!nuevoPlatoId) {
+    const plato = platos.find((p) => Number(p.ID_PLATO) === Number(nuevoPlatoId));
+    const cantidad = Number(nuevaCantidad);
+
+    if (!plato) {
       notify('warning', 'Elige un plato para agregar.');
+      return;
+    }
+
+    const disponibles = Number(plato.PLATOS_DISPONIBLES ?? 0);
+    if (disponibles <= 0) {
+      notify('error', `"${plato.NOMBRE_PLATO}" está agotado (0 disponibles).`);
+      return;
+    }
+    if (cantidad > disponibles) {
+      notify('warning', `Solo quedan ${disponibles} porciones disponibles de "${plato.NOMBRE_PLATO}".`);
       return;
     }
 
     try {
       await agregarDetallePedido(pedidoActivo.ID_PEDIDO, {
         id_plato: Number(nuevoPlatoId),
-        cantidad: Number(nuevaCantidad),
+        cantidad,
       });
       notify('success', 'Plato agregado al pedido.');
       setNuevoPlatoId('');
@@ -245,7 +258,7 @@ export default function ManejarPedidosPage() {
                 onChange={(e) => setNuevoPlatoId(e.target.value)}
                 options={platos.map((p) => ({
                   value: p.ID_PLATO,
-                  label: `${p.NOMBRE_PLATO} (${formatCLP(p.PRECIO_VIGENTE)})`,
+                  label: `${p.NOMBRE_PLATO} (${formatCLP(p.PRECIO_VIGENTE)} · ${p.PLATOS_DISPONIBLES ?? 0} disp.)`,
                 }))}
               />
               <Input
